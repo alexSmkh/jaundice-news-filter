@@ -12,3 +12,10 @@ POSITIVE_WORDS_PATH = os.path.join(
     'charged_dict',
     'positive_words.txt',
 )
+TEST_JAUNDICE_ARTICLE_URLS = [
+    'https://inosmi.ru/20230325/kitay-261671429.html',
+    'https://inosmi.ru/20230325/ryba-261669379.html',
+    'https://inosmi.ru/20230326/globalizatsiya--261684362.html',
+    'https://inosmi.ru/20230326/globalizatsiya--261684362.html',
+    'https://inosmi.ru/20230324/dollar-261661978.html',
+]
