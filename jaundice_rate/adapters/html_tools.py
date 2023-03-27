@@ -1,7 +1,6 @@
 DEFAULT_BLACKLIST_TAGS = [
     'script',
     'time',
-    'noindex',
 ]
 
 DEFAULT_UNWRAPLIST_TAGS = [
@@ -12,8 +11,6 @@ DEFAULT_UNWRAPLIST_TAGS = [
     'article',
     'header',
     'footer',
-    'strong',
-    'em',
 ]
 
 
