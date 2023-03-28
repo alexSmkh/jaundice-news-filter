@@ -1,11 +1,12 @@
 from typing import List, Tuple
 import aiohttp
+import anyio
 import asyncio
 
 import pymorphy2
 
 from jaundice_rate.adapters import SANITIZERS
-from jaundice_rate.settings import NEGATIVE_WORDS_PATH, TEST_JAUNDICE_ARTICLE_URLS
+from jaundice_rate.settings import NEGATIVE_WORDS_PATH, TEST_JAUNDICE_ARTICLE_URLS, ProcessingStatus
 from jaundice_rate.text_tools import calculate_jaundice_rate, split_by_words
 from jaundice_rate.utils import read_file_async
 
@@ -16,43 +17,44 @@ async def fetch(session: aiohttp.ClientSession, url: str) -> str:
         return await response.text()
 
 
-async def fetch_articles(article_urls: List[str]) -> List[str]:
-    async with aiohttp.ClientSession() as session:
-        tasks = []
-        for article_url in article_urls:
-            tasks.append(asyncio.create_task(fetch(session, article_url)))
-
-        return await asyncio.gather(*tasks)
-
-
-def calculate_article_rating(
+async def process_article(
     morph: pymorphy2.MorphAnalyzer,
     url: str,
-    html_article: str,
+    processed_articles: List[Tuple[str, float, int, str]],
     charged_words: List[str],
+    session: aiohttp.ClientSession,
 ) -> Tuple[str, float, int]:
+    try:
+        html_article = await fetch(session, url)
+    except aiohttp.ClientError:
+        return processed_articles.append((url, None, None, ProcessingStatus.FETCH_ERROR.value))
+
     article_text = SANITIZERS['inosmi_ru'](html_article, True)
     article_words = split_by_words(morph, article_text)
     rating = calculate_jaundice_rate(article_words, charged_words)
     words_count = len(article_words)
-    return url, rating, words_count
+    processed_articles.append((url, rating, words_count, ProcessingStatus.OK.name))
 
 
 async def main() -> None:
     morph = pymorphy2.MorphAnalyzer()
-    read_charged_words_task = asyncio.create_task(read_file_async(NEGATIVE_WORDS_PATH))
+    charged_words = (await read_file_async(NEGATIVE_WORDS_PATH)).strip().split('\n')
+    processed_articles = []
 
-    html_articles = await fetch_articles(TEST_JAUNDICE_ARTICLE_URLS)
+    async with aiohttp.ClientSession() as session:
+        async with anyio.create_task_group() as tg:
+            for url in TEST_JAUNDICE_ARTICLE_URLS:
+                tg.start_soon(
+                    process_article,
+                    morph,
+                    url,
+                    processed_articles,
+                    charged_words,
+                    session,
+                )
 
-    charged_words = (await read_charged_words_task).split('\n')
-    urls_ratings_words_count = []
-    for url, html_article in zip(TEST_JAUNDICE_ARTICLE_URLS, html_articles):
-        urls_ratings_words_count.append(
-            calculate_article_rating(morph, url, html_article, charged_words)
-        )
-
-    for url, rating, words_count in urls_ratings_words_count:
-        print(f'{url}\nРейтинг: {rating}\nКоличество слов: {words_count}\n')
+    for url, rating, words_count, status in processed_articles:
+        print(f'{url}\nСтатус: {status}\nРейтинг: {rating}\nКоличество слов: {words_count}\n')
 
 
 if __name__ == '__main__':
