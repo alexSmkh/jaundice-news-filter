@@ -1,5 +1,6 @@
 from typing import List, Tuple
 import aiohttp
+from async_timeout import timeout
 import anyio
 import asyncio
 
@@ -26,16 +27,20 @@ async def process_article(
     session: aiohttp.ClientSession,
 ) -> Tuple[str, float, int]:
     try:
-        html_article = await fetch(session, url)
+        async with timeout(5):
+            html_article = await fetch(session, url)
+
         sanitizer = get_sanitizer(url)
         article_text = sanitizer(html_article, True)
+    except asyncio.exceptions.TimeoutError:
+        return processed_articles.append((url, None, None, ProcessingStatus.TIMEOUT.value))
     except aiohttp.ClientError:
         return processed_articles.append((url, None, None, ProcessingStatus.FETCH_ERROR.value))
     except ArticleNotFound:
         return processed_articles.append((url, None, None, ProcessingStatus.PARSING_ERROR.value))
     except ResourceIsNotSupported:
         return processed_articles.append(
-            (url, None, None, ProcessingStatus.RESOURCE_IS_NOT_SUPPORTED_ERROR.value),
+            (url, None, None, ProcessingStatus.RESOURCE_IS_NOT_SUPPORTED.value),
         )
 
     article_words = split_by_words(morph, article_text)
