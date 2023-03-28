@@ -5,7 +5,8 @@ import asyncio
 
 import pymorphy2
 
-from jaundice_rate.adapters import SANITIZERS
+from jaundice_rate.adapters import SANITIZERS, get_sanitizer
+from jaundice_rate.adapters.exceptions import ArticleNotFound, ResourceIsNotSupported
 from jaundice_rate.settings import NEGATIVE_WORDS_PATH, TEST_JAUNDICE_ARTICLE_URLS, ProcessingStatus
 from jaundice_rate.text_tools import calculate_jaundice_rate, split_by_words
 from jaundice_rate.utils import read_file_async
@@ -26,10 +27,17 @@ async def process_article(
 ) -> Tuple[str, float, int]:
     try:
         html_article = await fetch(session, url)
+        sanitizer = get_sanitizer(url)
+        article_text = sanitizer(html_article, True)
     except aiohttp.ClientError:
         return processed_articles.append((url, None, None, ProcessingStatus.FETCH_ERROR.value))
+    except ArticleNotFound:
+        return processed_articles.append((url, None, None, ProcessingStatus.PARSING_ERROR.value))
+    except ResourceIsNotSupported:
+        return processed_articles.append(
+            (url, None, None, ProcessingStatus.RESOURCE_IS_NOT_SUPPORTED_ERROR.value),
+        )
 
-    article_text = SANITIZERS['inosmi_ru'](html_article, True)
     article_words = split_by_words(morph, article_text)
     rating = calculate_jaundice_rate(article_words, charged_words)
     words_count = len(article_words)

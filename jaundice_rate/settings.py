@@ -22,8 +22,11 @@ TEST_JAUNDICE_ARTICLE_URLS = [
     'https://inosmi.ru/20230326/globalizatsiya--261684362.html',
     'https://inosmi.ru/20230328/severnye-potoki-261740087.html',
     'https://inosmi.ru/20230324/dollar-261661978.html',
+    'https://ria.ru/20230328/rzhd-1861313840.html',
 ]
 
 class ProcessingStatus(Enum):
     OK = 'OK'
     FETCH_ERROR = 'FETCH_ERROR'
+    PARSING_ERROR = 'PARSING_ERROR'
+    RESOURCE_IS_NOT_SUPPORTED_ERROR = 'RESOURCE_IS_NOT_SUPPORTED_ERROR'
