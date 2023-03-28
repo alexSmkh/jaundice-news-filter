@@ -1,3 +1,6 @@
+import logging
+import os
+from pathlib import Path
 from typing import List, Tuple
 import aiohttp
 from async_timeout import timeout
@@ -6,11 +9,14 @@ import asyncio
 
 import pymorphy2
 
-from jaundice_rate.adapters import SANITIZERS, get_sanitizer
+from jaundice_rate.adapters import get_sanitizer
 from jaundice_rate.adapters.exceptions import ArticleNotFound, ResourceIsNotSupported
 from jaundice_rate.settings import NEGATIVE_WORDS_PATH, TEST_JAUNDICE_ARTICLE_URLS, ProcessingStatus
 from jaundice_rate.text_tools import calculate_jaundice_rate, split_by_words
-from jaundice_rate.utils import read_file_async
+from jaundice_rate.utils import calculation_time, read_file_async
+
+
+logger = logging.getLogger(__name__)
 
 
 async def fetch(session: aiohttp.ClientSession, url: str) -> str:
@@ -27,29 +33,46 @@ async def process_article(
     session: aiohttp.ClientSession,
 ) -> Tuple[str, float, int]:
     try:
+        analysis_time = None
+
         async with timeout(5):
             html_article = await fetch(session, url)
 
         sanitizer = get_sanitizer(url)
         article_text = sanitizer(html_article, True)
+
+        try:
+            with calculation_time() as get_analysis_time:
+                async with timeout(3):
+                    article_words = await split_by_words(morph, article_text)
+                    rating = await calculate_jaundice_rate(article_words, charged_words)
+                    words_count = len(article_words)
+        finally:
+            analysis_time = get_analysis_time()
+
     except asyncio.exceptions.TimeoutError:
-        return processed_articles.append((url, None, None, ProcessingStatus.TIMEOUT.value))
+        return processed_articles.append(
+            (url, None, None, ProcessingStatus.TIMEOUT.value, analysis_time),
+        )
     except aiohttp.ClientError:
-        return processed_articles.append((url, None, None, ProcessingStatus.FETCH_ERROR.value))
+        return processed_articles.append(
+            (url, None, None, ProcessingStatus.FETCH_ERROR.value, None),
+        )
     except ArticleNotFound:
-        return processed_articles.append((url, None, None, ProcessingStatus.PARSING_ERROR.value))
+        return processed_articles.append(
+            (url, None, None, ProcessingStatus.PARSING_ERROR.value, None),
+        )
     except ResourceIsNotSupported:
         return processed_articles.append(
-            (url, None, None, ProcessingStatus.RESOURCE_IS_NOT_SUPPORTED.value),
+            (url, None, None, ProcessingStatus.RESOURCE_IS_NOT_SUPPORTED.value, None),
         )
 
-    article_words = split_by_words(morph, article_text)
-    rating = calculate_jaundice_rate(article_words, charged_words)
-    words_count = len(article_words)
-    processed_articles.append((url, rating, words_count, ProcessingStatus.OK.name))
+    processed_articles.append((url, rating, words_count, ProcessingStatus.OK.name, analysis_time))
 
 
 async def main() -> None:
+    logging.basicConfig(level=logging.INFO, format='%(message)s')
+
     morph = pymorphy2.MorphAnalyzer()
     charged_words = (await read_file_async(NEGATIVE_WORDS_PATH)).strip().split('\n')
     processed_articles = []
@@ -66,8 +89,9 @@ async def main() -> None:
                     session,
                 )
 
-    for url, rating, words_count, status in processed_articles:
-        print(f'{url}\nСтатус: {status}\nРейтинг: {rating}\nКоличество слов: {words_count}\n')
+    for url, rating, words_count, status, analysis_time in processed_articles:
+        print(f'{url}\nСтатус: {status}\nРейтинг: {rating}\nКоличество слов: {words_count}')
+        logger.info(f'Analysis time: {analysis_time} sec.')
 
 
 if __name__ == '__main__':
