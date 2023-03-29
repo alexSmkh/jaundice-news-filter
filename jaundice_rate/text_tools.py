@@ -1,15 +1,18 @@
 import asyncio
 import string
+from typing import List, Set
+
+import pymorphy2
 
 
-def _clean_word(word):
+def _clean_word(word: str) -> str:
     word = word.replace('«', '').replace('»', '').replace('…', '')
     # FIXME какие еще знаки пунктуации часто встречаются ?
     word = word.strip(string.punctuation)
     return word
 
 
-async def split_by_words(morph, text):
+async def split_by_words(morph: pymorphy2.MorphAnalyzer, text: str) -> List[str]:
     """Учитывает знаки пунктуации, регистр и словоформы, выкидывает предлоги."""
     words = []
     for word in text.split():
@@ -21,7 +24,7 @@ async def split_by_words(morph, text):
     return words
 
 
-async def calculate_jaundice_rate(article_words, charged_words):
+async def calculate_jaundice_rate(article_words: List[str], charged_words: Set[str]) -> float:
     """
     Расчитывает желтушность текста, принимает список "заряженных" слов и ищет их внутри
     article_words.
@@ -30,7 +33,7 @@ async def calculate_jaundice_rate(article_words, charged_words):
         return 0.0
 
     found_charged_words = []
-    charged_words_set = set(charged_words)
+    charged_words_set = charged_words
     for word in article_words:
         await asyncio.sleep(0)
 

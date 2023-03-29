@@ -1,6 +1,5 @@
+from enum import Enum
 import logging
-import os
-from pathlib import Path
 from typing import List, Tuple
 import aiohttp
 from async_timeout import timeout
@@ -11,12 +10,20 @@ import pymorphy2
 
 from jaundice_rate.adapters import get_sanitizer
 from jaundice_rate.adapters.exceptions import ArticleNotFound, ResourceIsNotSupported
-from jaundice_rate.settings import NEGATIVE_WORDS_PATH, TEST_JAUNDICE_ARTICLE_URLS, ProcessingStatus
+from jaundice_rate.settings import TEST_JAUNDICE_ARTICLE_URLS
 from jaundice_rate.text_tools import calculate_jaundice_rate, split_by_words
-from jaundice_rate.utils import calculation_time, read_file_async
+from jaundice_rate.utils import calculation_time, read_charged_words
 
 
 logger = logging.getLogger(__name__)
+
+
+class ProcessingStatus(Enum):
+    OK = 'OK'
+    FETCH_ERROR = 'FETCH_ERROR'
+    PARSING_ERROR = 'PARSING_ERROR'
+    RESOURCE_IS_NOT_SUPPORTED = 'RESOURCE_IS_NOT_SUPPORTED'
+    TIMEOUT = 'TIMEOUT'
 
 
 async def fetch(session: aiohttp.ClientSession, url: str) -> str:
@@ -74,7 +81,7 @@ async def main() -> None:
     logging.basicConfig(level=logging.INFO, format='%(message)s')
 
     morph = pymorphy2.MorphAnalyzer()
-    charged_words = (await read_file_async(NEGATIVE_WORDS_PATH)).strip().split('\n')
+    charged_words = await read_charged_words()
     processed_articles = []
 
     async with aiohttp.ClientSession() as session:
@@ -91,7 +98,7 @@ async def main() -> None:
 
     for url, rating, words_count, status, analysis_time in processed_articles:
         print(f'{url}\nСтатус: {status}\nРейтинг: {rating}\nКоличество слов: {words_count}')
-        logger.info(f'Analysis time: {analysis_time} sec.')
+        logger.info(f'Analysis time: {analysis_time} sec.\n')
 
 
 if __name__ == '__main__':
