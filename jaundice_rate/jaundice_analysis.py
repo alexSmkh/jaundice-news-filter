@@ -7,11 +7,11 @@ import anyio
 import asyncio
 
 import pymorphy2
+from jaundice_rate import adapters
+from jaundice_rate import text_tools
 
-from jaundice_rate.adapters import get_sanitizer
 from jaundice_rate.adapters.exceptions import ArticleNotFound, ResourceIsNotSupported
 from jaundice_rate.settings import TEST_JAUNDICE_ARTICLE_URLS
-from jaundice_rate.text_tools import calculate_jaundice_rate, split_by_words
 from jaundice_rate.utils import calculation_time, read_charged_words
 
 
@@ -38,21 +38,21 @@ async def process_article(
     processed_articles: List[Tuple[str, float, int, str]],
     charged_words: List[str],
     session: aiohttp.ClientSession,
-) -> Tuple[str, float, int]:
+) -> List[Tuple[str, float, int, str]]:
     try:
         analysis_time = None
 
         async with timeout(5):
             html_article = await fetch(session, url)
 
-        sanitizer = get_sanitizer(url)
+        sanitizer = adapters.get_sanitizer(url)
         article_text = sanitizer(html_article, True)
 
         try:
             with calculation_time() as get_analysis_time:
                 async with timeout(3):
-                    article_words = await split_by_words(morph, article_text)
-                    rating = await calculate_jaundice_rate(article_words, charged_words)
+                    article_words = await text_tools.split_by_words(morph, article_text)
+                    rating = await text_tools.calculate_jaundice_rate(article_words, charged_words)
                     words_count = len(article_words)
         finally:
             analysis_time = get_analysis_time()
@@ -74,6 +74,7 @@ async def process_article(
             (url, None, None, ProcessingStatus.RESOURCE_IS_NOT_SUPPORTED.value, None),
         )
 
+    print((url, rating, words_count, ProcessingStatus.OK.name, analysis_time))
     processed_articles.append((url, rating, words_count, ProcessingStatus.OK.name, analysis_time))
 
 

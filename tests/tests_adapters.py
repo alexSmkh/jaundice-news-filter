@@ -1,7 +1,6 @@
 import pytest
 import requests
 from jaundice_rate.adapters.exceptions import ArticleNotFound
-
 from jaundice_rate.adapters.inosmi_ru import sanitize
 
 
