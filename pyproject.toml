@@ -9,7 +9,6 @@ packages = [{include = "jaundice_rate"}]
 [tool.poetry.dependencies]
 python = "^3.10"
 aiohttp = ">=3.0.0,<4.0.0"
-cchardet = ">=2.0.0,<3.0.0"
 aiodns = ">=2.0.0,<3.0.0"
 beautifulsoup4 = ">=4.0.0,<5.0.0"
 requests = ">=2.0.0,<3.0.0"
@@ -19,10 +18,10 @@ dawg-python = ">=0.7.0,<0.8.0"
 aiofile = "^3.8.5"
 anyio = "^3.6.2"
 async-timeout = "^4.0.2"
-pytest-aiohttp = "^1.0.4"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.2"
+pytest-aiohttp = "^1.0.4"
 pytest-asyncio = "^0.21.0"
 pytest-mock = "^3.10.0"
 
