@@ -1,39 +1,38 @@
-# Фильтр желтушных новостей
+# The Jaundice News filter
 
-[TODO. Опишите проект, схему работы]
+So far, only one news site is supported - [ИНОСМИ.РУ](https://inosmi.ru/). A special adapter has been developed for it, which is able to highlight the text of the article against the background of the rest of the HTML markup. Other news sites will require new adapters, all of them will be located in the `adapters` directory. The code for the INOSMI website is also placed there.RU: `jaundice_rate/adapters/inosmi_ru.py `.
 
-Пока поддерживается только один новостной сайт - [ИНОСМИ.РУ](https://inosmi.ru/). Для него разработан специальный адаптер, умеющий выделять текст статьи на фоне остальной HTML разметки. Для других новостных сайтов потребуются новые адаптеры, все они будут находиться в каталоге `adapters`. Туда же помещен код для сайта ИНОСМИ.РУ: `adapters/inosmi_ru.py`.
+# How to install
 
-В перспективе можно создать универсальный адаптер, подходящий для всех сайтов, но его разработка будет сложной и потребует дополнительных времени и сил.
+You need:
+* Python >= 3.10
+* [Poetry](https://python-poetry.org/docs/)
 
-# Как установить
-
-Вам понадобится Python версии 3.7 или старше. Для установки пакетов рекомендуется создать виртуальное окружение.
-
-Первым шагом установите пакеты:
-
-```python3
-pip install -r requirements.txt
+Run commands:
+```bash
+make install
+make env
 ```
 
-# Как запустить
+# How to run
 
-```python3
-python main.py
+To start the server, run the command and go to http://0.0.0.0:8080?urls={urls}
+
+`urls` - urls of articles from the inosmi website:
+```bash
+make server
 ```
 
-# Как запустить тесты
+---
 
-Для тестирования используется [pytest](https://docs.pytest.org/en/latest/), тестами покрыты фрагменты кода сложные в отладке: text_tools.py и адаптеры. Команды для запуска тестов:
-
-```
-python -m pytest adapters/inosmi_ru.py
-```
-
-```
-python -m pytest text_tools.py
+To run the cli utility, add links to articles in `jaundice_rate/settings.py` `TEST_JAUNDICE_ARTICLE_URLS` and run the command:
+```bash
+make run
 ```
 
-# Цели проекта
 
-Код написан в учебных целях. Это урок из курса по веб-разработке — [Девман](https://dvmn.org).
+# How to test
+
+```bash
+make test
+```

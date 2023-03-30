@@ -7,4 +7,10 @@ run:
 server:
 	python jaundice_rate/server.py
 
-.PHONY: test run
+install:
+	poetry install
+
+env:
+	poetry shell
+
+.PHONY: test run install env
