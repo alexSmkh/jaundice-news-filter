@@ -25,12 +25,15 @@ async def handle_articles(request):
     article_urls = request.query.get('urls', '')
 
     if not article_urls:
-        return web.HTTPBadRequest()
+        return web.json_response({"error": "Bad Request"}, status=400)
 
     article_urls = article_urls.split(',')
 
     if len(article_urls) > 10:
-        return web.json_response({"error": "too many urls in request, should be 10 or less"})
+        return web.json_response(
+            {"error": "too many urls in request, should be 10 or less"},
+            status=400,
+        )
 
     processed_articles = []
     async with aiohttp.ClientSession() as session:

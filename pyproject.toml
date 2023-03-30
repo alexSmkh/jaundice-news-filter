@@ -19,6 +19,7 @@ dawg-python = ">=0.7.0,<0.8.0"
 aiofile = "^3.8.5"
 anyio = "^3.6.2"
 async-timeout = "^4.0.2"
+pytest-aiohttp = "^1.0.4"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.2"
