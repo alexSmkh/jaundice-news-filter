@@ -1,6 +1,5 @@
 import asyncio
 import string
-from typing import List, Set
 
 import pymorphy2
 
@@ -12,19 +11,19 @@ def _clean_word(word: str) -> str:
     return word
 
 
-async def split_by_words(morph: pymorphy2.MorphAnalyzer, text: str) -> List[str]:
+async def split_by_words(morph: pymorphy2.MorphAnalyzer, text: str) -> list[str]:
     """Учитывает знаки пунктуации, регистр и словоформы, выкидывает предлоги."""
     words = []
     for word in text.split():
         cleaned_word = _clean_word(word)
-        normalized_word = morph.parse(cleaned_word)[0].normal_form
+        normalized_word = morph.parse(cleaned_word)[0].normal_form  # type: ignore
         if len(normalized_word) > 2 or normalized_word == 'не':
             words.append(normalized_word)
         await asyncio.sleep(0)
     return words
 
 
-async def calculate_jaundice_rate(article_words: List[str], charged_words: Set[str]) -> float:
+async def calculate_jaundice_rate(article_words: list[str], charged_words: set[str]) -> float:
     """
     Расчитывает желтушность текста, принимает список "заряженных" слов и ищет их внутри
     article_words.

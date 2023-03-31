@@ -1,19 +1,16 @@
-from enum import Enum
-import logging
-from typing import List, Tuple
-import aiohttp
-from async_timeout import timeout
-import anyio
 import asyncio
+import logging
+from enum import Enum
 
+import aiohttp
+import anyio
 import pymorphy2
-from jaundice_rate import adapters
-from jaundice_rate import text_tools
+from async_timeout import timeout
 
-from jaundice_rate.adapters.exceptions import ArticleNotFound, ResourceIsNotSupported
+from jaundice_rate import adapters, text_tools
+from jaundice_rate.adapters.exceptions import ArticleNotFoundError, ResourceIsNotSupportedError
 from jaundice_rate.settings import TEST_JAUNDICE_ARTICLE_URLS
 from jaundice_rate.utils import calculation_time, read_charged_words
-
 
 logger = logging.getLogger(__name__)
 
@@ -35,13 +32,14 @@ async def fetch(session: aiohttp.ClientSession, url: str) -> str:
 async def process_article(
     morph: pymorphy2.MorphAnalyzer,
     url: str,
-    processed_articles: List[Tuple[str, float, int, str]],
-    charged_words: List[str],
+    processed_articles: list[tuple],
+    charged_words: set[str],
     session: aiohttp.ClientSession,
-) -> List[Tuple[str, float, int, str]]:
-    try:
-        analysis_time = None
+) -> None:
+    analysis_time = None
+    get_analysis_time = None
 
+    try:
         async with timeout(5):
             html_article = await fetch(session, url)
 
@@ -55,7 +53,8 @@ async def process_article(
                     rating = await text_tools.calculate_jaundice_rate(article_words, charged_words)
                     words_count = len(article_words)
         finally:
-            analysis_time = get_analysis_time()
+            if get_analysis_time is not None:
+                analysis_time = get_analysis_time()
 
     except asyncio.exceptions.TimeoutError:
         return processed_articles.append(
@@ -65,17 +64,18 @@ async def process_article(
         return processed_articles.append(
             (url, None, None, ProcessingStatus.FETCH_ERROR.value, None),
         )
-    except ArticleNotFound:
+    except ArticleNotFoundError:
         return processed_articles.append(
             (url, None, None, ProcessingStatus.PARSING_ERROR.value, None),
         )
-    except ResourceIsNotSupported:
+    except ResourceIsNotSupportedError:
         return processed_articles.append(
             (url, None, None, ProcessingStatus.RESOURCE_IS_NOT_SUPPORTED.value, None),
         )
 
-    print((url, rating, words_count, ProcessingStatus.OK.name, analysis_time))
-    processed_articles.append((url, rating, words_count, ProcessingStatus.OK.name, analysis_time))
+    processed_articles.append(  # noqa: RET503
+        (url, rating, words_count, ProcessingStatus.OK.name, analysis_time),
+    )
 
 
 async def main() -> None:
@@ -98,8 +98,10 @@ async def main() -> None:
                 )
 
     for url, rating, words_count, status, analysis_time in processed_articles:
-        print(f'{url}\nСтатус: {status}\nРейтинг: {rating}\nКоличество слов: {words_count}')
-        logger.info(f'Analysis time: {analysis_time} sec.\n')
+        print(  # noqa: T201
+            f'{url}\nСтатус: {status}\nРейтинг: {rating}\nКоличество слов: {words_count}',
+        )
+        logger.info('Analysis time: %s sec.\n', analysis_time)
 
 
 if __name__ == '__main__':

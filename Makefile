@@ -13,4 +13,7 @@ install:
 env:
 	poetry shell
 
+isort:
+	ruff --select I . --fix
+
 .PHONY: test run install env

@@ -1,3 +1,5 @@
+import bs4
+
 DEFAULT_BLACKLIST_TAGS = [
     'script',
     'time',
@@ -14,7 +16,7 @@ DEFAULT_UNWRAPLIST_TAGS = [
 ]
 
 
-def remove_buzz_attrs(soup):
+def remove_buzz_attrs(soup: bs4.element.Tag) -> bs4.element.Tag:
     """Remove all attributes except some special tags."""
     for tag in soup.find_all(True):
         if tag.name == 'a':
@@ -31,7 +33,11 @@ def remove_buzz_attrs(soup):
     return soup
 
 
-def remove_buzz_tags(soup, blacklist=DEFAULT_BLACKLIST_TAGS, unwraplist=DEFAULT_UNWRAPLIST_TAGS):
+def remove_buzz_tags(
+    soup: bs4.element.Tag,
+    blacklist: list = DEFAULT_BLACKLIST_TAGS,
+    unwraplist: list = DEFAULT_UNWRAPLIST_TAGS,
+) -> None:
     """Remove most of tags, leaves only tags significant for text analysis."""
     for tag in soup.find_all(True):
         if tag.name in blacklist:
@@ -40,7 +46,7 @@ def remove_buzz_tags(soup, blacklist=DEFAULT_BLACKLIST_TAGS, unwraplist=DEFAULT_
             tag.unwrap()
 
 
-def remove_all_tags(soup):
+def remove_all_tags(soup: bs4.element.Tag) -> None:
     """Unwrap all tags."""
     for tag in soup.find_all(True):
         tag.unwrap()

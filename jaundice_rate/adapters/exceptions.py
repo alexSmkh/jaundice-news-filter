@@ -1,6 +1,6 @@
-class ArticleNotFound(Exception):
+class ArticleNotFoundError(Exception):
     pass
 
 
-class ResourceIsNotSupported(Exception):
+class ResourceIsNotSupportedError(Exception):
     pass

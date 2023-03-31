@@ -1,11 +1,12 @@
 import pytest
 import requests
-from jaundice_rate.adapters.exceptions import ArticleNotFound
+
+from jaundice_rate.adapters.exceptions import ArticleNotFoundError
 from jaundice_rate.adapters.inosmi_ru import sanitize
 
 
-def test_sanitize():
-    resp = requests.get('https://inosmi.ru/economic/20190629/245384784.html')
+def test_sanitize() -> None:
+    resp = requests.get('https://inosmi.ru/economic/20190629/245384784.html', timeout=5)
     resp.raise_for_status()
     clean_text = sanitize(resp.text)
 
@@ -27,8 +28,8 @@ def test_sanitize():
     assert '<h1>' not in clean_plaintext
 
 
-def test_sanitize_wrong_url():
-    resp = requests.get('http://example.com')
+def test_sanitize_wrong_url() -> None:
+    resp = requests.get('http://example.com', timeout=5)
     resp.raise_for_status()
-    with pytest.raises(ArticleNotFound):
+    with pytest.raises(ArticleNotFoundError):
         sanitize(resp.text)

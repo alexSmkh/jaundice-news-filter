@@ -1,24 +1,28 @@
+import ast
 import asyncio
+
 import aiohttp
 import pymorphy2
 import pytest
-import jaundice_rate
+from pytest_mock import MockFixture
 
 from jaundice_rate.jaundice_analysis import ProcessingStatus, process_article
 from tests.helpers import load_fixture
 
 
-@pytest.mark.asyncio
-async def test_process_article(mocker):
+@pytest.mark.asyncio()
+async def test_process_article(mocker: MockFixture) -> None:
     article_html = await load_fixture('article_html.txt')
-    charged_words = await load_fixture('charged_words.txt', eval=True)
+    charged_words = ast.literal_eval(await load_fixture('charged_words.txt'))
+
     (
         expected_url,
         expected_rating,
         expected_words_count,
         expected_status,
         _,
-    ) = await load_fixture('article_analysis_result.txt', eval=True)
+    ) = ast.literal_eval(await load_fixture('article_analysis_result.txt'))
+
     expected_url = 'http://inosmi.ru/article/1'
     morph = pymorphy2.MorphAnalyzer()
 
@@ -31,7 +35,7 @@ async def test_process_article(mocker):
         expected_url,
         processed_articles,
         charged_words,
-        None,
+        None,  # type: ignore
     )
 
     url, rating, words_count, status, analysis_time = processed_articles[0]
@@ -43,22 +47,22 @@ async def test_process_article(mocker):
     assert analysis_time > 0.0
 
 
-@pytest.mark.asyncio
-async def test_process_article_with_timeout(mocker):
+@pytest.mark.asyncio()
+async def test_process_article_with_timeout(mocker: MockFixture) -> None:
     mocker.patch(
         'jaundice_rate.jaundice_analysis.fetch',
         side_effect=asyncio.exceptions.TimeoutError,
-        return_value=None
+        return_value=None,
     )
 
     expected_url = 'http://inosmi.ru/article/1'
     processed_articles = []
     await process_article(
-        None,
+        pymorphy2.MorphAnalyzer(),
         expected_url,
         processed_articles,
-        None,
-        None,
+        set(),
+        None,  # type: ignore
     )
 
     url, rating, words_count, status, analysis_time = processed_articles[0]
@@ -70,21 +74,21 @@ async def test_process_article_with_timeout(mocker):
     assert analysis_time is None
 
 
-@pytest.mark.asyncio
-async def test_process_article_when_resource_is_not_supported(mocker):
+@pytest.mark.asyncio()
+async def test_process_article_when_resource_is_not_supported(mocker: MockFixture) -> None:
     mocker.patch(
         'jaundice_rate.jaundice_analysis.fetch',
-        return_value=''
+        return_value='',
     )
 
     expected_url = 'http://example.com'
     processed_articles = []
     await process_article(
-        None,
+        pymorphy2.MorphAnalyzer(),
         expected_url,
         processed_articles,
-        None,
-        None,
+        set(),
+        None,  # type: ignore
     )
 
     url, rating, words_count, status, analysis_time = processed_articles[0]
@@ -96,21 +100,21 @@ async def test_process_article_when_resource_is_not_supported(mocker):
     assert analysis_time is None
 
 
-@pytest.mark.asyncio
-async def test_process_article_when_article_not_found(mocker):
+@pytest.mark.asyncio()
+async def test_process_article_when_article_not_found(mocker: MockFixture) -> None:
     mocker.patch(
         'jaundice_rate.jaundice_analysis.fetch',
-        return_value=''
+        return_value='',
     )
 
     expected_url = 'http://inosmi.ru/article/1'
     processed_articles = []
     await process_article(
-        None,
+        pymorphy2.MorphAnalyzer(),
         expected_url,
         processed_articles,
-        None,
-        None,
+        set(),
+        None,  # type: ignore
     )
 
     url, rating, words_count, status, analysis_time = processed_articles[0]
@@ -122,8 +126,11 @@ async def test_process_article_when_article_not_found(mocker):
     assert analysis_time is None
 
 
-@pytest.mark.asyncio
-async def test_process_article_with_too_long_analysis_time(monkeypatch, mocker):
+@pytest.mark.asyncio()
+async def test_process_article_with_too_long_analysis_time(
+    monkeypatch: pytest.MonkeyPatch,
+    mocker: MockFixture,
+) -> None:
     monkeypatch.setattr('jaundice_rate.adapters.get_sanitizer', lambda *args: lambda *args: '')
     mocker.patch(
         'jaundice_rate.jaundice_analysis.fetch',
@@ -132,7 +139,7 @@ async def test_process_article_with_too_long_analysis_time(monkeypatch, mocker):
 
     max_allowed_analysis_time = 3
 
-    async def mock_split_by_words(*args, **kwargs):
+    async def mock_split_by_words(*args) -> list:  # noqa: ARG001, ANN002
         await asyncio.sleep(max_allowed_analysis_time + 0.1)
         return []
 
@@ -141,11 +148,11 @@ async def test_process_article_with_too_long_analysis_time(monkeypatch, mocker):
     expected_url = 'http://inosmi.ru/article/1'
     processed_articles = []
     await process_article(
-        None,
+        pymorphy2.MorphAnalyzer(),
         expected_url,
         processed_articles,
-        None,
-        None,
+        set(),
+        None,  # type: ignore
     )
 
     url, rating, words_count, status, analysis_time = processed_articles[0]
@@ -157,22 +164,22 @@ async def test_process_article_with_too_long_analysis_time(monkeypatch, mocker):
     assert analysis_time > max_allowed_analysis_time
 
 
-@pytest.mark.asyncio
-async def test_process_article_when_client_error(mocker):
+@pytest.mark.asyncio()
+async def test_process_article_when_client_error(mocker: MockFixture) -> None:
     mocker.patch(
         'jaundice_rate.jaundice_analysis.fetch',
         side_effect=aiohttp.ClientError,
-        return_value=None
+        return_value=None,
     )
 
     expected_url = 'http://inosmi.ru/article/1'
     processed_articles = []
     await process_article(
-        None,
+        pymorphy2.MorphAnalyzer(),
         expected_url,
         processed_articles,
-        None,
-        None,
+        set(),
+        None,  # type: ignore
     )
 
     url, rating, words_count, status, analysis_time = processed_articles[0]

@@ -1,27 +1,25 @@
-from aiohttp import web
-
+import asyncio
 import logging
-from typing import List
+
 import aiohttp
 import anyio
-import asyncio
-
 import pymorphy2
+from aiohttp import web
+
 from jaundice_rate.jaundice_analysis import process_article
 from jaundice_rate.utils import read_charged_words
-
 
 logger = logging.getLogger(__name__)
 MORPH = pymorphy2.MorphAnalyzer()
 CHARGED_WORDS = None
 
 
-async def load_charged_words() -> List[str]:
+async def load_charged_words() -> None:
     global CHARGED_WORDS
     CHARGED_WORDS = await read_charged_words()
 
 
-async def handle_articles(request):
+async def handle_articles(request: web.Request) -> web.Response:
     article_urls = request.query.get('urls', '')
 
     if not article_urls:
