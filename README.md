@@ -14,7 +14,7 @@ make install
 make env
 ```
 
-# How to run
+# How to run locally
 
 To start the server, run the command and go to http://0.0.0.0:8080?urls={urls}
 
@@ -28,6 +28,17 @@ make server
 To run the cli utility, add links to articles in `jaundice_rate/settings.py` `TEST_JAUNDICE_ARTICLE_URLS` and run the command:
 ```bash
 make run
+```
+
+# How to run using Docker
+Build:
+```bash
+docker build -t jaundice_rate .
+```
+
+Run:
+```
+docker run -it --rm -p 8080:8080 jaundice_rate
 ```
 
 
